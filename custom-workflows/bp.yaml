@@ -63,6 +63,11 @@ workflows:
         default:
           - custom_actions.upgrade_rr
           - terraform.reload
+      run_data:
+        default:
+          size: 2K
+      variables:
+        default: {}
 
   PatchDataServer:
     mapping: cloudify_custom_workflow.cloudify_custom_workflow.tasks.customwf
