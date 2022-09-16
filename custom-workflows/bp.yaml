@@ -1,0 +1,82 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - https://cloudify.co/spec/cloudify/6.3.2/types.yaml
+  - plugin:cloudify-ansible-plugin
+  - plugin:cloudify-utilities-plugin
+  - plugin:cloudify-terraform-plugin
+
+dsl_definitions:
+  sources: &sources
+    vms:
+      hosts:
+        master:
+          ansible_host: localhost
+          ansible_connection: local
+
+node_templates:
+
+  terraform:
+    type: cloudify.nodes.terraform
+
+  terraform_module:
+    type: cloudify.nodes.terraform.Module
+    properties:
+      resource_config:
+        source:
+          location: https://github.com/Cloudify-PS/terraform-noop-module/archive/refs/heads/main.zip
+    relationships:
+      - target: terraform
+        type: cloudify.terraform.relationships.run_on_host
+
+  test:
+    type: cloudify.nodes.ansible.Executor
+    properties:
+      playbook_path: ansible/example.yaml
+      sources: *sources
+      run_data:
+        size: 1K
+        text: 'test'
+    interfaces:
+      custom_actions:
+        upgrade_rr:
+          implementation: ansible.cloudify_ansible.tasks.run
+          inputs:
+            playbook_path: ansible/example.yaml
+            sources: *sources
+            run_data:
+              size: 1K
+              text: 'test'
+    relationships:
+      - target: terraform_module
+        type: cloudify.relationships.depends_on
+
+workflows:
+  test:
+    mapping: scripts/test_wf.py
+    parameters:
+      nodes_to_runon:
+        default:
+          - test
+          - terraform_module
+      operations_to_execute:
+        default:
+          - custom_actions.upgrade_rr
+          - terraform.reload
+
+  PatchDataServer:
+    mapping: cloudify_custom_workflow.cloudify_custom_workflow.tasks.customwf
+    parameters:
+      nodes_to_runon:
+        default:
+          - test
+      operations_to_execute:
+        default:
+          - custom_actions.upgrade_rr
+      run_data:
+        default:
+          size: 2K
+      variables:
+        default: {}
+      allow_kwargs_override:
+        default: true
