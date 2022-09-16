@@ -66,8 +66,10 @@ workflows:
       run_data:
         default:
           size: 2K
+          text: "text"
       variables:
-        default: {}
+        default:
+          test: "test"
 
   PatchDataServer:
     mapping: cloudify_custom_workflow.cloudify_custom_workflow.tasks.customwf
