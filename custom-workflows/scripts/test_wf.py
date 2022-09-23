@@ -8,10 +8,12 @@ for node_instance in ctx.node_instances:
             'cloudify.nodes.ansible.Executor' in \
             node_instance.node.type_hierarchy:
         operation = 'custom_actions.upgrade_rr'
+        run_data = node_instance.node.properties.get('run_data')
+        run_data.update(p["run_data"])
         task = node_instance.execute_operation(operation,
                                                allow_kwargs_override=True,
                                                kwargs={
-                                                   "run_data": p["run_data"]
+                                                   "run_data": run_data
                                                })
         ctx.logger.info("Operation: {}".format(operation))
         graph.add_task(task)
