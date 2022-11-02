@@ -1,0 +1,1 @@
+ctx logger info "Printing value of TEST: ${TEST} on create"

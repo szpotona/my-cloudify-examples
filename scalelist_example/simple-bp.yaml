@@ -1,0 +1,36 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - https://cloudify.co/spec/cloudify/6.3.2/types.yaml
+
+inputs:
+  the_value:
+    type: string
+
+node_types:
+
+  test_type:
+    derived_from: cloudify.nodes.SoftwareComponent
+    properties:
+      property_we_want_to_change_on_scaling:
+        type: string
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          executor: central_deployment_agent
+          implementation: script.script_runner.tasks.run
+          inputs:
+            script_path:
+              default: scripts/start.sh
+            process:
+              default:
+                env:
+                  TEST: { get_property: [SELF, property_we_want_to_change_on_scaling] }
+
+node_templates:
+
+
+  test:
+    type: test_type
+    properties:
+      property_we_want_to_change_on_scaling: { get_input: the_value }

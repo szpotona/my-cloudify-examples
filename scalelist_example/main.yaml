@@ -1,0 +1,36 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - https://cloudify.co/spec/cloudify/6.3.2/types.yaml
+  - plugin:cloudify-utilities-plugin
+
+
+node_templates:
+
+  test:
+    type: cloudify.nodes.ServiceComponent
+    capabilities:
+      scalable:
+        properties:
+          default_instances: 0
+    properties:
+      resource_config:
+        blueprint:
+          external_resource: true
+          id: simple-bp
+        deployment:
+          id: { concat: [{ get_sys: [deployment, name] }, "-disk"] }
+          auto_inc_suffix: true
+          labels:
+            - csys-obj-parent: { get_sys: [ deployment, id ] }
+          inputs:
+            the_value: "10"
+
+workflows:
+  add_disk:
+    mapping: custom_workflows/add_disk.py
+    parameters:
+      disk_sizes:
+        default: []
+      disk_node_name:
+        default: "test"
