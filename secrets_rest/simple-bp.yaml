@@ -1,0 +1,24 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - https://cloudify.co/spec/cloudify/6.3.2/types.yaml
+
+
+node_types:
+
+  test_type:
+    derived_from: cloudify.nodes.SoftwareComponent
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          executor: central_deployment_agent
+          implementation: script.script_runner.tasks.run
+          inputs:
+            script_path:
+              default: scripts/start.py
+
+
+node_templates:
+
+  test:
+    type: test_type

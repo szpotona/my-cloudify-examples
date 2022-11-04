@@ -1,0 +1,27 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - https://cloudify.co/spec/cloudify/6.3.2/types.yaml
+
+node_templates:
+
+  ips_reservation:
+    type: cloudify.nodes.SoftwareComponent
+    interfaces:
+      custom:
+        reserve_ip:
+          implementation: scripts/start.py
+          executor: central_deployment_agent
+          inputs:
+            vm_id: test
+
+capabilities:
+  reserved_ips:
+    value: { get_attribute: [ips_reservation, reserved_ips] }
+
+workflows:
+  reserve_ip:
+    mapping: custom_workflows/reserve_ip.py
+    parameters:
+        vm_id:
+          type: string
