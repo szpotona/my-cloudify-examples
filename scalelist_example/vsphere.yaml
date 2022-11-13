@@ -1,0 +1,98 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/6.3.2/types.yaml
+  - plugin:cloudify-vsphere-plugin?version= >=2.19.11
+  - plugin:cloudify-utilities-plugin
+
+dsl_definitions:
+  connection_config: &connection_config
+    username: { get_secret: vsphere_username }
+    password: { get_secret: vsphere_password }
+    host: { get_secret: vsphere_host }
+    port: { get_secret: vsphere_port }
+    datacenter_name: { get_secret: vsphere_datacenter_name }
+    resource_pool_name: { get_secret: vsphere_resource_pool_name }
+    auto_placement: { get_secret: vsphere_auto_placement }
+    allow_insecure: true
+
+inputs:
+
+  vol2_instance_number:
+    type: integer
+    default: 1
+
+  username:
+    type: string
+    default: centos
+
+  server_name:
+    type: string
+    default: test
+
+  template:
+    type: string
+    default: { get_secret: centos_template }
+
+  network_name:
+    type: string
+    default: Internal
+
+  vswitch_name:
+    type: string
+    default: ""
+
+  switch_distributed:
+    type: boolean
+    default: false
+
+  max_wait_time:
+    type: integer
+    default: 15
+
+node_templates:
+
+  disk:
+    type: cloudify.nodes.ServiceComponent
+    capabilities:
+      scalable:
+        properties:
+          default_instances: 0
+    properties:
+      resource_config:
+        blueprint:
+          external_resource: true
+          id: simple-bp
+        deployment:
+          id: { concat: [{ get_sys: [deployment, name] }, "-disk"] }
+          auto_inc_suffix: true
+          labels:
+            - csys-obj-parent: { get_sys: [ deployment, id ] }
+          inputs:
+            server_name: { get_input: server_name }
+            disk_size: 10
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: vm
+
+  vm:
+    type: cloudify.vsphere.nodes.Server
+    properties:
+      connection_config: *connection_config
+      use_external_resource: false
+      agent_config:
+        install_method: none
+      server:
+        name: { get_input: server_name }
+        template: { get_input: template }
+        cpus: 1
+        memory: 1024
+        add_scale_suffix: false
+      networking:
+        connect_networks:
+          - name: { get_input: network_name }
+            management: true
+            external: true
+            switch_distributed: { get_input: switch_distributed }
+            use_dhcp: true
+
