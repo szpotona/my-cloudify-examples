@@ -12,6 +12,7 @@ scalable_entity_properties:
           inputs:
             server_name: { get_attribute: [vm, name] }
             disk_size: 5
+            busKey: 1002
     - resource_config:
         blueprint:
           external_resource: true
@@ -24,3 +25,4 @@ scalable_entity_properties:
           inputs:
             server_name: { get_attribute: [vm, name] }
             disk_size: 8
+            busKey: 1002

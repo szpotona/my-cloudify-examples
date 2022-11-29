@@ -4,6 +4,10 @@ imports:
   - https://cloudify.co/spec/cloudify/6.3.2/types.yaml
   - plugin:cloudify-utilities-plugin
 
+inputs:
+  number:
+    default: 0
+    type: integer
 
 node_templates:
 
@@ -12,7 +16,7 @@ node_templates:
     capabilities:
       scalable:
         properties:
-          default_instances: 0
+          default_instances: { get_input: number}
     properties:
       resource_config:
         blueprint:

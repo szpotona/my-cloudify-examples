@@ -16,6 +16,9 @@ dsl_definitions:
     allow_insecure: true
 
 inputs:
+  busKey:
+    type: integer
+
   server_name:
     type: string
     default: test
@@ -29,36 +32,14 @@ inputs:
 
 node_templates:
 
-  bus_number:
-    type: cloudify.nodes.SoftwareComponent
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        configure:
-          executor: central_deployment_agent
-          implementation: script.script_runner.tasks.run
-          inputs:
-            script_path: scripts/get_bus_number.py
-
-  scsi_controller:
-    type: cloudify.vsphere.nodes.SCSIController
-    properties:
-      connection_config: *connection_config
-      adapterType: paravirtual
-      busNumber: { get_attribute: [bus_number, number] }
-    relationships:
-      - type: cloudify.vsphere.controller_connected_to_vm
-        target: vm
-      - type: cloudify.relationships.depends_on
-        target: bus_number
-
   vol:
     type: cloudify.vsphere.nodes.Storage
     properties:
       connection_config: *connection_config
       use_external_resource: false
       storage:
-        storage_size: 10
-        parent_key: { get_attribute: [scsi_controller, busKey] }
+        storage_size: { get_input: disk_size }
+        parent_key: { get_input: busKey }
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
@@ -67,8 +48,6 @@ node_templates:
     relationships:
       - type: cloudify.vsphere.storage_connected_to_server
         target: vm
-      - type: cloudify.relationships.depends_on
-        target: scsi_controller
 
 
   vm:

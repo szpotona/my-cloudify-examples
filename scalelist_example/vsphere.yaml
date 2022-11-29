@@ -71,8 +71,19 @@ node_templates:
           inputs:
             server_name: { get_input: server_name }
             disk_size: 10
+            busKey: { get_attribute: [scsi_controller, busKey] }
     relationships:
       - type: cloudify.relationships.depends_on
+        target: vm
+
+  scsi_controller:
+    type: cloudify.vsphere.nodes.SCSIController
+    properties:
+      connection_config: *connection_config
+      adapterType: lsilogic
+      busNumber: 2
+    relationships:
+      - type: cloudify.vsphere.controller_connected_to_vm
         target: vm
 
   vm:
