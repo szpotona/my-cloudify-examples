@@ -32,6 +32,13 @@ inputs:
 
 node_templates:
 
+  wait_for_deployment:
+    type: cloudify.nodes.SoftwareComponent
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        precreate:
+          executor: central_deployment_agent
+          implementation: scripts/wait_for_deployment.py
   vol:
     type: cloudify.vsphere.nodes.Storage
     properties:
@@ -48,6 +55,8 @@ node_templates:
     relationships:
       - type: cloudify.vsphere.storage_connected_to_server
         target: vm
+      - type: cloudify.relationships.depends_on
+        target: wait_for_deployment
 
 
   vm:
