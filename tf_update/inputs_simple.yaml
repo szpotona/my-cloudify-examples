@@ -1,0 +1,4 @@
+source: "https://github.com/szpotona/terraform-file-with-variables/archive/refs/heads/update.zip"
+source_path: "."
+variables:
+  test2: some_updated_var

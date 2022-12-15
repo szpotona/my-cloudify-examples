@@ -1,0 +1,4 @@
+module_source: "https://github.com/szpotona/terraform-file-with-variables/archive/refs/heads/main.zip"
+module_source_path: "."
+variables:
+  test: initial
