@@ -26,3 +26,16 @@ scalable_entity_properties:
             server_name: { get_attribute: [vm, name] }
             disk_size: 8
             busKey: 1002
+    - resource_config:
+        blueprint:
+          external_resource: true
+          id: simple-bp
+        deployment:
+          id: { concat: [ { get_sys: [ deployment, name ] }, "-disk" ] }
+          auto_inc_suffix: true
+          labels:
+            - csys-obj-parent: { get_sys: [ deployment, id ] }
+          inputs:
+            server_name: { get_attribute: [ vm, name ] }
+            disk_size: 3
+            busKey: 1002

@@ -1,0 +1,20 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+description: >
+  This blueprint creates python virtualenv.
+
+imports:
+  - http://cloudify.co/spec/cloudify/6.3.1/types.yaml
+
+node_templates:
+  python_venv:
+    type: cloudify.nodes.SoftwareComponent
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: script.script_runner.tasks.run
+          executor: central_deployment_agent
+          inputs:
+            script_path: scripts/test
+            process:
+              command_prefix: { get_capability: [python_venv, python_path] }
