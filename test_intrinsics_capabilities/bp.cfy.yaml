@@ -1,0 +1,18 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+description: >
+  This blueprint creates python virtualenv.
+
+imports:
+  - http://cloudify.co/spec/cloudify/6.3.1/types.yaml
+
+inputs:
+  test:
+    default: "sfyFFSAFSdsdasda"
+node_templates:
+  test:
+    type: cloudify.nodes.SoftwareComponent
+
+capabilities:
+  test_cap:
+    value: { string_upper: { get_input: test }}
