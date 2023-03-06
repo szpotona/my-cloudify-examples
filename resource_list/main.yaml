@@ -1,0 +1,61 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - https://cloudify.co/spec/cloudify/6.3.2/types.yaml
+  - plugin:cloudify-utilities-plugin
+
+inputs:
+  resources_list:
+    default:
+      - 10
+      - 15
+      - 5
+
+node_templates:
+
+  resources:
+    type: cloudify.nodes.resources.List
+    properties:
+      resource_config: { get_input: resources_list }
+    capabilities:
+      scalable:
+        properties:
+          min_instances: 1
+          max_instances: 1
+
+  disk_size:
+    type: cloudify.nodes.resources.ListItem
+    relationships:
+      - type: cloudify.relationships.resources.reserve_list_item
+        target: resources
+
+  test:
+    type: cloudify.nodes.ServiceComponent
+    capabilities:
+      scalable:
+        properties:
+          default_instances: 0
+    properties:
+      resource_config:
+        blueprint:
+          external_resource: true
+          id: simple
+        deployment:
+          id: { concat: [{ get_sys: [deployment, name] }, "-disk"] }
+          auto_inc_suffix: true
+          labels:
+            - csys-obj-parent: { get_sys: [ deployment, id ] }
+          inputs:
+            the_value: { get_attribute: [disk_size, reservation] }
+
+groups:
+  disk_size_and_test:
+    members: [disk_size, test]
+
+policies:
+  vm_scaling_policy:
+    type: cloudify.policies.scaling
+    properties:
+      default_instances: 1
+      min_instances: 1
+    targets: [disk_size_and_test]

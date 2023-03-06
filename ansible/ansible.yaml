@@ -1,0 +1,20 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - https://cloudify.co/spec/cloudify/6.3.2/types.yaml
+  - plugin:cloudify-ansible-plugin
+
+node_templates:
+  ansible_executor:
+    type: cloudify.nodes.ansible.Ansible
+    properties:
+      extra_packages:
+        - whatever
+      galaxy_collections:
+        - community.general
+capabilities:
+  ansible_venv:
+   description: >
+     The Ansible virtual environment
+   value:
+     venv: { get_attribute: [ ansible_executor, playbook_venv ] }

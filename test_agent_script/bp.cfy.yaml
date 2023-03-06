@@ -6,23 +6,15 @@ description: >
 imports:
   - http://cloudify.co/spec/cloudify/6.3.1/types.yaml
 
-inputs:
-  test:
-    default: "sfyFFSAFSdsdasda"
 node_templates:
   test:
     type: cloudify.nodes.SoftwareComponent
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: scripts/capabilities.py
+          implementation: scripts/agent_test.py
           executor: central_deployment_agent
-          inputs:
-            node_id: { get_attribute: [SELF, node_id ]}
-            node_id_prop: { get_property: [SELF, node_id]}
 
 capabilities:
-  test_cap:
-    value: { string_upper: { get_input: test }}
-  test_cap_concat:
-    value: { concat: [ 'test-', { get_input: test }]}
+  agent_link:
+    value: { get_attribute: [test, download_link]}

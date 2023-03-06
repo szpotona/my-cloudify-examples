@@ -1,0 +1,76 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - https://cloudify.co/spec/cloudify/6.3.2/types.yaml
+  - plugin:cloudify-terraform-plugin?version=0.19.14
+
+node_templates:
+
+  terraform:
+    type: cloudify.nodes.terraform
+
+  module1:
+    type: cloudify.nodes.terraform.Module
+    properties:
+      resource_config:
+        environment_variables:
+          ARM_SUBSCRIPTION_ID: {get_secret: azure_subscription_id}
+          ARM_TENANT_ID: {get_secret: azure_tenant_id}
+          ARM_CLIENT_ID: {get_secret: azure_client_id}
+          ARM_CLIENT_SECRET: {get_secret: azure_client_secret}
+        provider:
+          providers:
+            - name: azurerm
+              options:
+                features: { }
+        source:
+          location: https://github.com/szpotona/tf-azure-rg/archive/refs/heads/master.zip
+        variables:
+          name: "test"
+          location: "northeurope"
+          role_name: "test"
+        mock_outputs:
+          resource_group: "SetByCloudify"
+          resource_group_name: "SetByCloudify"
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        configure:
+          implementation: tf.cloudify_tf.tasks.plan
+        delete: {}
+    relationships:
+      - target: terraform
+        type: cloudify.terraform.relationships.run_on_host
+
+  module2:
+    type: cloudify.nodes.terraform.Module
+    properties:
+      resource_config:
+        environment_variables:
+          ARM_SUBSCRIPTION_ID: {get_secret: azure_subscription_id}
+          ARM_TENANT_ID: {get_secret: azure_tenant_id}
+          ARM_CLIENT_ID: {get_secret: azure_client_id}
+          ARM_CLIENT_SECRET: {get_secret: azure_client_secret}
+        provider:
+          providers:
+            - name: azurerm
+              options:
+                features: { }
+        source:
+          location: https://github.com/szpotona/tf-azure-vnet/archive/refs/heads/master.zip
+        variables:
+          az_resource_group_name: { get_attribute: [module1, outputs, resource_group_name, value]}
+          cidr_block: "10.0.0.1"
+          cidr_block_prefix: "24"
+          dns_servers: []
+        mock_outputs:
+          test_output: "SetByCloudify"
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        configure:
+          implementation: tf.cloudify_tf.tasks.plan
+        delete: { }
+    relationships:
+      - target: module1
+        type: cloudify.relationships.depends_on
+      - target: terraform
+        type: cloudify.terraform.relationships.run_on_host

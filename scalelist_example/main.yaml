@@ -30,6 +30,7 @@ node_templates:
           inputs:
             the_value: "10"
 
+
 workflows:
   add_disk:
     mapping: custom_workflows/add_disk.py

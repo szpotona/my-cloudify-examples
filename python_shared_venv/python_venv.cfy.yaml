@@ -9,7 +9,7 @@ imports:
 inputs:
   requirements:
     type: string
-    default: >
+    default: |
       jwt
       cloudify
 

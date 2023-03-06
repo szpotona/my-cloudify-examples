@@ -14,6 +14,11 @@ dsl_definitions:
           ansible_host: localhost
           ansible_connection: local
 
+inputs:
+  provided_text:
+    type: string
+    default: "provided text"
+
 node_templates:
 
   terraform:
@@ -39,7 +44,7 @@ node_templates:
         text: 'test'
     interfaces:
       custom_actions:
-        upgrade:
+        upgrade_rr:
           implementation: ansible.cloudify_ansible.tasks.run
           inputs:
             playbook_path: ansible/example.yaml
@@ -61,12 +66,12 @@ workflows:
           - terraform_module
       operations_to_execute:
         default:
-          - custom_actions.upgrade
+          - custom_actions.upgrade_rr
           - terraform.reload
       run_data:
         default:
           size: 2K
-          text: "text "
+          text: { get_input: provided_text }
       variables:
         default:
           test: "test"
@@ -79,7 +84,7 @@ workflows:
           - test
       operations_to_execute:
         default:
-          - custom_actions.upgrade
+          - custom_actions.upgrade_rr
       run_data:
         default:
           size: 2K

@@ -1,0 +1,180 @@
+tosca_definitions_version: cloudify_dsl_1_4
+imports:
+  - cloudify/types/types.yaml
+  - plugin:cloudify-gcp-plugin?version= >=1.6.0
+  - plugin:cloudify-utilities-plugin?version= >=1.22.1
+description: using svpc
+inputs:
+  image:
+    type: string
+    display_label: URL to the Centos image.
+    description: Centos image.
+    default: https://www.googleapis.com/compute/v1/projects/centos-cloud/global/images/centos-7-v20191210
+    constraints:
+      - pattern: ^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$
+  instance_type:
+    type: string
+    display_label: A small GCP machine type.
+    description: A small GCP machine type.
+    default: n1-standard-2
+  agent_user:
+    type: string
+    display_label: Username
+    description: |
+      The username of the agent running on the instance created from the image.
+    default: centos
+  agent_key_name:
+    type: string
+    display_label: Agent key name
+    description: Agent key that will be generated for username
+    default: agent_key
+  env_name:
+    type: string
+    display_label: Control parameters for names in resources.
+    description: Control parameters for names in resources.
+    default: example
+  user_project_id:
+    description: ''
+    default: ss-automation-326613
+    type: string
+    display_label: Project ID
+outputs:
+  ServerName:
+    description: Server Name
+    value: { get_attribute: [vm, name] }
+
+dsl_definitions:
+  gcp_config: &gcp_config
+    type: service_account
+    auth_uri: https://accounts.google.com/o/oauth2/auth
+    token_uri: https://accounts.google.com/o/oauth2/token
+    auth_provider_x509_cert_url: https://www.googleapis.com/oauth2/v1/certs
+    client_x509_cert_url: { get_secret: gcp_client_x509_cert_url }
+    client_email: { get_secret: gcp_client_email }
+    client_id: { get_secret: gcp_client_id }
+    project_id: { get_secret: gcp_project_id }
+    private_key_id: { get_secret: gcp_private_key_id }
+    private_key: { get_secret: gcp_private_key }
+
+node_templates:
+  initial_password:
+    type: cloudify.nodes.SoftwareComponent
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: script.script_runner.tasks.run
+          inputs:
+            script_path: scripts/start.sh
+            process:
+              env:
+                PASS_LENGTH: 12
+                INCLUDE_SYMBOLS: 1
+  vm:
+    type: cloudify.gcp.nodes.Instance
+    properties:
+      gcp_config:
+        auth: *gcp_config
+        project: { get_input: user_project_id }
+        zone: { get_secret: gcp_mandatory_zone }
+        region: { get_secret: gcp_mandatory_region }
+      agent_config:
+        install_method: none
+      use_public_ip: false
+      zone: { get_secret: gcp_mandatory_zone }
+      external_ip: false
+      tags:
+        - { concat: [{get_sys: [deployment, id]}, "-tcp-80"]}
+        - { concat: [{get_sys: [deployment, id]}, "-tcp-443"]}
+      additional_settings:
+        RandomUserPassword: { get_attribute: [initial_password, password]}
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: subnet
+      - type: cloudify.relationships.depends_on
+        target: disk
+      - target: network
+        type: cloudify.relationships.connected_to
+      - target: initial_password
+        type: cloudify.relationships.depends_on
+
+  disk:
+    type: cloudify.gcp.nodes.Volume
+    properties:
+      gcp_config:
+        auth: *gcp_config
+        project: { get_input: user_project_id }
+        zone: { get_secret: gcp_mandatory_zone }
+        region: { get_secret: gcp_mandatory_region }
+      image: { get_input: image }
+      size: 20
+      boot: true
+  subnet:
+    type: cloudify.gcp.nodes.SubNetwork
+    properties:
+      region: { get_secret: gcp_mandatory_region }
+      subnet: 10.11.12.0/22
+      gcp_config:
+        auth: *gcp_config
+        project: { get_secret: gcp_shared_network_project_dev }
+        zone: { get_secret: gcp_mandatory_zone }
+        region: { get_secret: gcp_mandatory_region }
+      use_external_resource: true
+      name: subnet-ew1-dev
+    relationships:
+      - type: cloudify.gcp.relationships.contained_in_network
+        target: network
+  network:
+    type: cloudify.gcp.nodes.Network
+    properties:
+      gcp_config:
+        auth: *gcp_config
+        project: { get_secret: gcp_shared_network_project_dev }
+        zone: { get_secret: gcp_mandatory_zone }
+        region: { get_secret: gcp_mandatory_region }
+      auto_subnets: false
+      use_external_resource: true
+      name: svpc-bel-dev
+  rule-http:
+    type: cloudify.nodes.gcp.FirewallRule
+    properties:
+      gcp_config:
+        auth: *gcp_config
+        project: { get_secret: user_project_id }
+        zone: { get_secret: gcp_mandatory_zone }
+        region: { get_secret: gcp_mandatory_region }
+      network: { get_attribute: [network, name] }
+      name: matillion-http-https-rule
+      allowed:
+        tcp: [80]
+      source_ranges: ["0.0.0.0/0"]
+      target_tags:
+        - { concat: [{get_sys: [deployment, id]}, "-tcp-80"]}
+  rule-https:
+    type: cloudify.nodes.gcp.FirewallRule
+    properties:
+      gcp_config:
+        auth: *gcp_config
+        project: { get_secret: user_project_id }
+        zone: { get_secret: gcp_mandatory_zone }
+        region: { get_secret: gcp_mandatory_region }
+      network: { get_attribute: [network, name] }
+      name: matillion-http-https-rule
+      allowed:
+        tcp: [443]
+      source_ranges: ["0.0.0.0/0"]
+    target_tags:
+      - { concat: [ { get_sys: [ deployment, id ] }, "-tcp-80" ] }
+
+labels:
+  obj-type:
+    values:
+      - vm
+      - service
+
+capabilities:
+  endpoint:
+    description: The external endpoint of the application.
+    value: { get_attribute: [vm, ip] }
+  initial_password:
+    description: Initial password for Matillion
+    value: { get_attribute: [initial_password, password] }

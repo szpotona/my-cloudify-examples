@@ -1,0 +1,8 @@
+- name: Start the patch update play
+  hosts: localhost_group
+  gather_facts: false
+  tasks:
+    - name: list pip packages
+      shell: /opt/manager/resources/deployments/default_tenant/72fcabcd-fba0-4008-a129-97a184d5ee01/tmp24t4242x/bin/pip list
+    - debug:
+        msg: "{{ text }}"

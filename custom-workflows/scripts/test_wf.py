@@ -1,5 +1,6 @@
 from cloudify.workflows import ctx
 from cloudify.workflows import parameters as p
+from cloudify.manager import get_rest_client
 
 graph = ctx.graph_mode()
 ctx.logger.info("Parameters {}".format(str(p)))
@@ -16,6 +17,9 @@ for node_instance in ctx.node_instances:
                                                    "run_data": run_data
                                                })
         ctx.logger.info("Operation: {}".format(operation))
+        client = get_rest_client()
+        node = client.nodes.get(ctx.deployment.id, node_instance.node.id, evaluate_functions=True)
+        ctx.logger.info("Parameters " + str(node.properties['run_data']))
         graph.add_task(task)
 graph.execute()
 

@@ -20,3 +20,11 @@ prev_deployment_id = "-".join(dep_elements)
 ctx.logger.info("Previous dep id: " + prev_deployment_id)
 if prev_deployment_index >= 0:
     wait_for_deployment(prev_deployment_id)
+
+
+with open("/tmp/debug.log", 'a') as f:
+    f.write("Debugging Manager 500 error. Deployment id: " + deployment_id + "\n")
+    f.write("Component_ids: " + str(components_ids) + "\n")
+
+with open("/tmp/debug.log", 'a') as f:
+    f.write("Component: " + component + self.sm.list(models.NodeInstance,filters=node_instance_filter,get_all_results=True,include=['runtime_properties','id'])+ "\n")
